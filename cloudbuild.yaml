@@ -16,7 +16,6 @@ steps:
       # 'go build -o opsgo' compiles the Go application into an executable named 'opsgo'.
       - '-c'
       - 'go mod tidy && go build -o opsgo'
-    secretEnv: ['SONAR_TOKEN']
     id: 'build-go-app' # A unique identifier for this step, helpful for dependencies.
 
   # Step 2: Run SonarQube analysis
@@ -33,6 +32,7 @@ steps:
       # Pass the SonarQube authentication token.
       # '$SONAR_TOKEN' is automatically populated from the availableSecret.
       - '-Dsonar.login=$SONAR_TOKEN'
+    secretEnv: ['SONAR_TOKEN']
     id: 'run-sonar-scan' # A unique identifier for this step.
 
 availableSecrets:
