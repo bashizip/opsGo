@@ -14,9 +14,9 @@ steps:
       - '-Dsonar.host.url=http://34.10.176.217:9000'
       - '-Dsonar.login=$SONAR_TOKEN'
     env:
-      - 'SONAR_TOKEN'
+      - '$SONAR_TOKEN'
 
 availableSecrets:
   secretManager:
     - versionName: projects/391675659319/secrets/SONAR_TOKEN/versions/latest
-      env: 'SONAR_TOKEN'
+      env: '$SONAR_TOKEN'
