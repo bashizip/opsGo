@@ -42,7 +42,7 @@ availableSecrets:
       # Specifies the full resource path to the secret version in Secret Manager.
       # Cloud Build will fetch the 'latest' version of the 'SONAR_TOKEN' secret
       # from the specified project.
-    - versionName: projects/$PROJECT_ID/secrets/SONAR_TOKEN/versions/latest
+    - versionName: projects/391675659319/secrets/SONAR_TOKEN/versions/latest
       # Exposes the secret's value as an environment variable named 'SONAR_TOKEN'
       # to all subsequent build steps. This allows the sonar-scanner step to use it directly.
     - env: 'SONAR_TOKEN'
