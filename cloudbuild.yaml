@@ -1,22 +1,47 @@
+# Cloud Build configuration to build a Go application and run a SonarQube scan.
+
 options:
+  # Configure logging for the build.
+  # CLOUD_LOGGING_ONLY sends logs exclusively to Cloud Logging,
+  # useful for centralized log management.
   logging: CLOUD_LOGGING_ONLY
 
 steps:
+  # Step 1: Build the Go application
+  # Uses the official Golang Docker image to manage dependencies and compile the binary.
   - name: 'golang:1.19.1'
     entrypoint: 'sh'
-    args: ['-c', 'go mod tidy && go build -o opsgo']
+    args:
+      # 'go mod tidy' ensures module dependencies are consistent.
+      # 'go build -o opsgo' compiles the Go application into an executable named 'opsgo'.
+      - '-c'
+      - 'go mod tidy && go build -o opsgo'
+    id: 'build-go-app' # A unique identifier for this step, helpful for dependencies.
 
+  # Step 2: Run SonarQube analysis
+  # Uses the SonarScanner CLI Docker image to perform code analysis.
   - name: 'docker.io/sonarsource/sonar-scanner-cli'
     entrypoint: 'sonar-scanner'
     args:
+      # Define the SonarQube project key.
       - '-Dsonar.projectKey=opsgo'
+      # Specify the source directory for analysis (current directory).
       - '-Dsonar.sources=.'
+      # Provide the URL of your SonarQube server.
       - '-Dsonar.host.url=http://34.10.176.217:9000'
+      # Pass the SonarQube authentication token.
+      # '$SONAR_TOKEN' is automatically populated from the availableSecret.
       - '-Dsonar.login=$SONAR_TOKEN'
-    env:
-      - 'SONAR_TOKEN'
+    id: 'run-sonar-scan' # A unique identifier for this step.
 
 availableSecrets:
-  secretManager:
-    - versionName: projects/391675659319/secrets/SONAR_TOKEN/versions/latest
+  # Define secrets to be made available during the build process.
+  # These secrets are securely fetched from Google Secret Manager.
+  - secretManager:
+      # Specifies the full resource path to the secret version in Secret Manager.
+      # Cloud Build will fetch the 'latest' version of the 'SONAR_TOKEN' secret
+      # from the specified project.
+      version: projects/391675659319/secrets/SONAR_TOKEN/versions/latest
+      # Exposes the secret's value as an environment variable named 'SONAR_TOKEN'
+      # to all subsequent build steps. This allows the sonar-scanner step to use it directly.
       env: 'SONAR_TOKEN'
