@@ -1,26 +1,19 @@
 steps:
-  # Step 1: Compile the Go Application
-  - name: 'gcr.io/cloud-builders/go'
-    id: 'Compile application'
-    env: ['GOPATH=/gopath']
-    args: ['build', '-o', 'main', 'main.go']
+  - name: 'golang:1.19.1'
+    entrypoint: 'sh'
+    args: ['-c', 'go mod tidy && go build -o opsgo']
 
-  # Step 2: Build the Docker image for the Go application
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Docker image'
-    args: ['build', '-t', '<your-region>-docker.pkg.dev/$PROJECT_ID/my-repository/hello-cloudbuild:<version>', '.']
-
-  # Step 3: Push the Docker image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push Docker image'
-    args: ['push', '<your-region>-docker.pkg.dev/$PROJECT_ID/my-repository/hello-cloudbuild:<version>']
-
-  # Step 4: Apply the production deployment YAML file to the production namespace
-  - name: 'gcr.io/cloud-builders/kubectl'
-    id: 'Deploy'
-    args: ['-n', 'prod', 'apply', '-f', 'prod/deployment.yaml']
+  - name: 'docker.io/sonarsource/sonar-scanner-cli'
+    entrypoint: 'sonar-scanner'
+    args:
+      - '-Dsonar.projectKey=opsgo'
+      - '-Dsonar.sources=.'
+      - '-Dsonar.host.url=http://34.10.176.217:9000'
+      - '-Dsonar.login=$SONAR_TOKEN'
     env:
-    - 'CLOUDSDK_COMPUTE_REGION=<your-zone>'
-    - 'CLOUDSDK_CONTAINER_CLUSTER=hello-cluster'
-options:
- logging: CLOUD_LOGGING_ONLY
+      - 'SONAR_TOKEN'
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/391675659319/secrets/SONAR_TOKEN/versions/latest
+      env: 'SONAR_TOKEN'
