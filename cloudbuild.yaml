@@ -8,7 +8,7 @@ options:
 
 steps:
   # Step 1: Build the Go application
-  # Uses the official Golang Docker image to manage dependencies and compile the binary.
+  # Uses the official ( but old version by purpose ) Golang Docker image to manage dependencies and compile the binary.
   - name: 'golang:1.19.1'
     entrypoint: 'sh'
     args:
