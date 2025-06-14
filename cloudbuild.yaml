@@ -43,6 +43,7 @@ steps:
       # Pass the SonarQube authentication token.sqp_72f20ad3a3c4cf0b07cbdcd4bb44ec50b4f63677
       # '$SONAR_TOKEN' is automatically populated from the availableSecret.
       - '-Dsonar.login=$$SONAR_TOKEN'
+      - '-Dsonar.password='
     secretEnv: ['SONAR_TOKEN']
     id: 'run-sonar-scan' # A unique identifier for this step.
 
