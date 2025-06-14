@@ -45,4 +45,4 @@ availableSecrets:
     - versionName: projects/391675659319/secrets/SONAR_TOKEN/versions/latest
       # Exposes the secret's value as an environment variable named 'SONAR_TOKEN'
       # to all subsequent build steps. This allows the sonar-scanner step to use it directly.
-    - env: 'SONAR_TOKEN'
+      env: 'SONAR_TOKEN'
