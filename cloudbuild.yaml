@@ -24,7 +24,7 @@ steps:
     entrypoint: 'sonar-scanner'
     args:
       # Define the SonarQube project key.
-      - '-Dsonar.projectKey=opsgo'
+      - '-Dsonar.projectKey=opsgo-sonar'
       # Specify the source directory for analysis (current directory).
       - '-Dsonar.sources=.'
       # Provide the URL of your SonarQube server.
