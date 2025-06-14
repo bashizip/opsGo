@@ -41,7 +41,7 @@ steps:
       # Provide the URL of your SonarQube server.
       - '-Dsonar.host.url=http://34.10.176.217:9000'
       # Pass the SonarQube authentication token.
-      # '$SONAR_TOKEN' is automatically populated from the availableSecret.
+      # '$SONAR_TOKEN' is the sonar user token automatically populated from the availableSecret.
       - '-Dsonar.login=$$SONAR_TOKEN'
     secretEnv: ['SONAR_TOKEN']
     id: 'run-sonar-scan' # A unique identifier for this step.
