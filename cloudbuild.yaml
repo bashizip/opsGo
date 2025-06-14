@@ -9,7 +9,7 @@ options:
 steps:
   # Step 1: Build the Go application
   # Uses the official ( but old version by purpose ) Golang Docker image to manage dependencies and compile the binary.
-  - name: 'golang:1.19.1'
+  - name: 'golang:1.19'
     entrypoint: 'sh'
     args:
       # 'go mod tidy' ensures module dependencies are consistent.
