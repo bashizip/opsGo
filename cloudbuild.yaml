@@ -28,6 +28,13 @@ steps:
     secretEnv: ['SONAR_TOKEN']
     id: 'debug-secret'
 
+ # Create the sonar dir before the SonarQube scan
+  - name: 'alpine'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - 'mkdir -p .sonar && chmod 777 .sonar'
+    id: 'prepare-sonar-dir'
 
   # Step 2: Run SonarQube analysis
   # Uses the SonarScanner CLI Docker image to perform code analysis.
