@@ -18,7 +18,16 @@ steps:
       - 'go mod tidy && go build -o opsgo'
     id: 'build-go-app' # A unique identifier for this step, helpful for dependencies.
 
-  # Step 2: Run SonarQube analysis
+   # Step 2.1: Run SonarQube analysis
+   # Create the sonar dir before the SonarQube scan
+  - name: 'alpine'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - 'mkdir -p .sonar && chmod 777 .sonar'
+    id: 'prepare-sonar-dir'
+
+  # Step 2.2: Run SonarQube analysis
   # Uses the SonarScanner CLI Docker image to perform code analysis.
   - name: 'docker.io/sonarsource/sonar-scanner-cli'
     entrypoint: 'sonar-scanner'
@@ -44,7 +53,7 @@ availableSecrets:
       # Specifies the full resource path to the secret version in Secret Manager.
       # Cloud Build will fetch the 'latest' version of the 'SONAR_TOKEN' secret
       # from the specified project.
-    - versionName: projects/391675659319/secrets/SONAR_TOKEN/versions/latest
+    - versionName: projects/$PROJECT_ID/secrets/SONAR_TOKEN/versions/latest
       # Exposes the secret's value as an environment variable named 'SONAR_TOKEN'
       # to all subsequent build steps. This allows the sonar-scanner step to use it directly.
       env: 'SONAR_TOKEN'
