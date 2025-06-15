@@ -38,6 +38,8 @@ steps:
       - '-Dsonar.projectKey=opsgo-sonar'
       # Specify the source directory for analysis (current directory).
       - '-Dsonar.sources=.'
+       # Set the working directory for SonarQube
+      - '-Dsonar.working.directory=.sonar'
       # Provide the URL of your SonarQube server.
       - '-Dsonar.host.url=http://34.10.176.217:9000'
       # Pass the SonarQube authentication token.sqp_72f20ad3a3c4cf0b07cbdcd4bb44ec50b4f63677
