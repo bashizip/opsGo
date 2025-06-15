@@ -18,24 +18,6 @@ steps:
       - 'go mod tidy && go build -o opsgo'
     id: 'build-go-app' # A unique identifier for this step, helpful for dependencies.
 
-  - name: 'alpine'
-    entrypoint: 'sh'
-    args:
-    - '-c'
-    - |
-      echo "🔍 SONAR_TOKEN is set."
-      echo "Starts with: $${SONAR_TOKEN:0:6}"
-    secretEnv: ['SONAR_TOKEN']
-    id: 'debug-secret'
-
- # Create the sonar dir before the SonarQube scan
-  - name: 'alpine'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - 'mkdir -p .sonar && chmod 777 .sonar'
-    id: 'prepare-sonar-dir'
-
   # Step 2: Run SonarQube analysis
   # Uses the SonarScanner CLI Docker image to perform code analysis.
   - name: 'docker.io/sonarsource/sonar-scanner-cli'
