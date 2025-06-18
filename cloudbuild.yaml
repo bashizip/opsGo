@@ -8,7 +8,7 @@ options:
 
 steps:
   # Step 1: Build the Go application
-  # Uses the official ( but old version by purpose ) Golang Docker image to manage dependencies and compile the binary.
+  # Uses the official (but old version by purpose) Golang Docker image to manage dependencies and compile the binary.
   - name: 'golang:1.19'
     entrypoint: 'sh'
     args:
@@ -18,8 +18,8 @@ steps:
       - 'go mod tidy && go build -o opsgo'
     id: 'build-go-app' # A unique identifier for this step, helpful for dependencies.
 
-   # Step 2.1: Run SonarQube analysis
-   # Create the sonar dir before the SonarQube scan
+  # Step 2.1: Prepare SonarQube working directory
+  # Creates the .sonar directory with proper permissions before running the scan.
   - name: 'alpine'
     entrypoint: 'sh'
     args:
@@ -36,23 +36,44 @@ steps:
       - '-Dsonar.projectKey=opsgo-sonar'
       # Specify the source directory for analysis (current directory).
       - '-Dsonar.sources=.'
-       # Set the working directory for SonarQube
+      # Set the working directory for SonarQube (where temp files are stored).
       - '-Dsonar.working.directory=.sonar'
       # Provide the URL of your SonarQube server.
       - '-Dsonar.host.url=http://34.10.176.217:9000'
-      # Pass the SonarQube authentication token.sqp_72f20ad3a3c4cf0b07cbdcd4bb44ec50b4f63677
-      # '$SONAR_TOKEN' is automatically populated from the availableSecret.
+      # Pass the SonarQube authentication token.
+      # '$$SONAR_TOKEN' is automatically populated from the availableSecret.
       - '-Dsonar.token=$$SONAR_TOKEN'
     secretEnv: ['SONAR_TOKEN']
     id: 'run-sonar-scan' # A unique identifier for this step.
+
+  # Step 2.3: Verify SonarQube Quality Gate Status
+  # Checks if the SonarQube quality gate passed (fails build if not).
+  - name: 'curlimages/curl'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        # Wait a few seconds for SonarQube to process the analysis.
+        sleep 10
+        # Fetch the quality gate status using the SonarQube API.
+        RESULT=$(curl -s -u "$$SONAR_TOKEN:" "http://34.10.176.217:9000/api/qualitygates/project_status?projectKey=opsgo-sonar" | jq -r '.projectStatus.status')
+        # Fail the build if the quality gate status is not "OK".
+        if [ "$RESULT" != "OK" ]; then
+          echo "❌ SonarQube Quality Gate Failed: $RESULT"
+          exit 1
+        else
+          echo "✅ SonarQube Quality Gate Passed"
+        fi
+    secretEnv: ['SONAR_TOKEN']
+    id: 'check-quality-gate'
 
 availableSecrets:
   # Define secrets to be made available during the build process.
   # These secrets are securely fetched from Google Secret Manager.
   secretManager:
-      # Specifies the full resource path to the secret version in Secret Manager.
-      # Cloud Build will fetch the 'latest' version of the 'SONAR_TOKEN' secret
-      # from the specified project.
+    # Specifies the full resource path to the secret version in Secret Manager.
+    # Cloud Build will fetch the 'latest' version of the 'SONAR_TOKEN' secret
+    # from the specified project.
     - versionName: projects/$PROJECT_ID/secrets/SONAR_TOKEN/versions/latest
       # Exposes the secret's value as an environment variable named 'SONAR_TOKEN'
       # to all subsequent build steps. This allows the sonar-scanner step to use it directly.
