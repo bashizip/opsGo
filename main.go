@@ -28,6 +28,7 @@ import (
 const port string = ":8080"
 
 func main() {
+    var unused int // This will trigger a code smell warning
 	http.HandleFunc("/blue", blueHandler)
 	fmt.Println("Listening on port " + port)
 	http.ListenAndServe(port, nil)
