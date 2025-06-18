@@ -58,7 +58,7 @@ steps:
         # Fetch the quality gate status using the SonarQube API.
         RESULT=$(curl -s -u "$$SONAR_TOKEN:" "http://34.10.176.217:9000/api/qualitygates/project_status?projectKey=opsgo-sonar" | jq -r '.projectStatus.status')
         # Fail the build if the quality gate status is not "OK".
-        if [ "$R$ESULT" != "OK" ]; then
+        if [ "$$RESULT" != "OK" ]; then
           echo "❌ SonarQube Quality Gate Failed: $$RESULT !!"
           exit 1
         else
