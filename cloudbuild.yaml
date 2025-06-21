@@ -1,26 +1,80 @@
-steps:
-  # Step 1: Compile the Go Application
-  - name: 'gcr.io/cloud-builders/go'
-    id: 'Compile application'
-    env: ['GOPATH=/gopath']
-    args: ['build', '-o', 'main', 'main.go']
+# Cloud Build configuration to build a Go application and run a SonarQube scan.
 
-  # Step 2: Build the Docker image for the Go application
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Docker image'
-    args: ['build', '-t', '<your-region>-docker.pkg.dev/$PROJECT_ID/my-repository/hello-cloudbuild:<version>', '.']
-
-  # Step 3: Push the Docker image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push Docker image'
-    args: ['push', '<your-region>-docker.pkg.dev/$PROJECT_ID/my-repository/hello-cloudbuild:<version>']
-
-  # Step 4: Apply the production deployment YAML file to the production namespace
-  - name: 'gcr.io/cloud-builders/kubectl'
-    id: 'Deploy'
-    args: ['-n', 'prod', 'apply', '-f', 'prod/deployment.yaml']
-    env:
-    - 'CLOUDSDK_COMPUTE_REGION=<your-zone>'
-    - 'CLOUDSDK_CONTAINER_CLUSTER=hello-cluster'
 options:
- logging: CLOUD_LOGGING_ONLY
+  # Configure logging for the build.
+  # CLOUD_LOGGING_ONLY sends logs exclusively to Cloud Logging,
+  # useful for centralized log management.
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  # Step 1: Build the Go application
+  # Uses the official (but old version by purpose) Golang Docker image to manage dependencies and compile the binary.
+  - name: 'golang:1.19'
+    entrypoint: 'sh'
+    args:
+      # 'go mod tidy' ensures module dependencies are consistent.
+      # 'go build -o opsgo' compiles the Go application into an executable named 'opsgo'.
+      - '-c'
+      - 'go mod tidy && go build -o opsgo'
+    id: 'build-go-app' # A unique identifier for this step, helpful for dependencies.
+
+  # Step 2.1: Prepare SonarQube working directory
+  # Creates the .sonar directory with proper permissions before running the scan.
+  - name: 'alpine'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - 'mkdir -p .sonar && chmod 777 .sonar'
+    id: 'prepare-sonar-dir'
+
+  # Step 2.2: Run SonarQube analysis
+  # Uses the SonarScanner CLI Docker image to perform code analysis.
+  - name: 'docker.io/sonarsource/sonar-scanner-cli'
+    entrypoint: 'sonar-scanner'
+    args:
+      # Define the SonarQube project key.
+      - '-Dsonar.projectKey=opsgo-sonar'
+      # Specify the source directory for analysis (current directory).
+      - '-Dsonar.sources=.'
+      # Set the working directory for SonarQube (where temp files are stored).
+      - '-Dsonar.working.directory=.sonar'
+      # Provide the URL of your SonarQube server.
+      - '-Dsonar.host.url=http://34.10.176.217:9000'
+      # Pass the SonarQube authentication token.
+      # '$$SONAR_TOKEN' is automatically populated from the availableSecret.
+      - '-Dsonar.token=$$SONAR_TOKEN'
+    secretEnv: ['SONAR_TOKEN']
+    id: 'run-sonar-scan' # A unique identifier for this step.
+
+  # Step 2.3: Verify SonarQube Quality Gate Status
+  # Checks if the SonarQube quality gate passed (fails build if not).
+  - name: 'curlimages/curl'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        # Wait a few seconds for SonarQube to process the analysis.
+        sleep 10
+        # Fetch the quality gate status using the SonarQube API.
+        RESULT=$(curl -s -u "$$SONAR_TOKEN:" "http://34.10.176.217:9000/api/qualitygates/project_status?projectKey=opsgo-sonar" | jq -r '.projectStatus.status')
+        # Fail the build if the quality gate status is not "OK".
+        if [ "$$RESULT" != "OK" ]; then
+          echo "❌ SonarQube Quality Gate Failed: $$RESULT !!"
+          exit 1
+        else
+          echo "✅ SonarQube Quality Gate Passed !"
+        fi
+    secretEnv: ['SONAR_TOKEN']
+    id: 'check-quality-gate'
+
+availableSecrets:
+  # Define secrets to be made available during the build process.
+  # These secrets are securely fetched from Google Secret Manager.
+  secretManager:
+    # Specifies the full resource path to the secret version in Secret Manager.
+    # Cloud Build will fetch the 'latest' version of the 'SONAR_TOKEN' secret
+    # from the specified project.
+    - versionName: projects/$PROJECT_ID/secrets/SONAR_TOKEN/versions/latest
+      # Exposes the secret's value as an environment variable named 'SONAR_TOKEN'
+      # to all subsequent build steps. This allows the sonar-scanner step to use it directly.
+      env: 'SONAR_TOKEN'
